@@ -1,0 +1,49 @@
+pipeline {
+    agent any 
+    stages {
+	stage('Checkout external proj') {
+        steps {
+                git branch: 'v19',
+                credentialsId: 'eae645bd-076c-4b5c-8023-f85dfbc93afb',  //Jenkins token
+                url: 'https://github.com/CAPRI-EAI-webMethods/Arpit_CICD_Test.git'
+        }
+    }	
+		stage('BuildIS'){
+            steps {
+                bat '%AntHome%/ant.bat -f "%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/config/build.xml" -Dbuild.output.dir=%build.output.dir% -Dbuild.archive.dir=%build.archive.dir% -Dbuild.source.dir=%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/IS'
+            }
+        }
+		stage('BuildMFT'){
+            steps {
+                bat '%AntHome%/ant.bat -f "%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/config/build.xml" -Dbuild.output.dir=%build.output.dir% -Dbuild.archive.dir=%build.archive.dir% -Dbuild.source.project.dir=%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/MFT'
+            }
+        }
+		
+		stage('CreateProject'){
+            steps {
+                bat '%Deployer_Home%/projectautomator.bat D:/Jenkins/Workspace/%IntegrationComponents%/%Jenkins_JobName%/config/ProjectAutomatorForRepository_%Environment%.xml'
+            }
+        }
+		stage('Deploy'){
+            steps {
+                bat '%Deployer_Home%/Deployer.bat --simulate --checkpoint --deploy -force -dc myDeployment -project ESB_%PackageName%_To_%Environment% -configfile %Deployer_Home%/configFile.cnf'
+            }
+        }
+        stage('Test & Coverage'){
+            steps {
+                bat '%AntHome%/ant.bat -f %Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/IS/WmTestSuiteExecutor/run-composite-runner.xml -DwebMethods.test.setup.location=%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/IS/packages/%PackageName% -DwebMethods.test.scope.packages=%PackageName%  -DwebMethods.test.profile.result.location=%Jenkins_Workspace%/%IntegrationComponents%/%Jenkins_JobName%/IS/WmTestSuiteExecutor/test/reports'
+            }
+        }
+		stage('Publish Coverage'){
+            steps {
+                publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'IS/WmTestSuiteExecutor/test/reports', reportFiles: 'html/index.html,wmcodecoverage/sag-utf-code-coverage.html', reportName: 'Coverage Report', reportTitles: ''])
+            }
+        }
+		stage('Publish Junit Reports'){
+            steps {
+                junit allowEmptyResults: true, testResults: 'IS/WmTestSuiteExecutor/test/reports/TESTS-*.xml'
+            }
+        }
+	
+    }
+}
