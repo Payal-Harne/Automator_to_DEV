@@ -1,0 +1,11 @@
+Think backup plugin setting
+
+Wait until Jenkins is idle to perform a backup
+? =120 changed to -1
+
+
+Edited in config.xml line no 19
+  <version>2.414.1</version>
+  <numExecutors>2</numExecutors>
+  <mode>NORMAL</mode>
+  <useSecurity>false</useSecurity>
