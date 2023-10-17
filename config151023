@@ -77,7 +77,7 @@
           <string>MAVEN_OPTS</string>
           <string></string>
         </tree-map>
-      </envVars>
+     </envVars>
     </hudson.slaves.EnvironmentVariablesNodeProperty>
   </nodeProperties>
   <globalNodeProperties/>
